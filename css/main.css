@@ -1,0 +1,24 @@
+body{
+	margin: 0px;
+}
+table, th, td {
+    border: 1px solid black;
+}
+div.form{
+	border-top: 1px solid #1d799e;
+	border-bottom: 1px solid #155b76;
+	background-color: #269CCB;
+	border-radius: 2em;
+	color: white;
+	width: 40%;
+	height: 30%;
+	margin: 0 auto;
+	position:absolute;
+	top:50%;
+	left:50%;
+	margin:-15% 0 0 -20%;
+	text-align: left;
+	font-size: 2em;
+	padding-left:5%;
+	font-size: 1.5vw;
+}
