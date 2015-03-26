@@ -7,7 +7,9 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.text.SimpleDateFormat;
 
 
@@ -18,30 +20,35 @@ public class Phase implements Serializable {
 	private static final long serialVersionUID = 1L;
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id_participante;
-	
+	private Long id;
+	private Long idEvento;
 	private Date fechaIni;
 	private Date fechaFin;
-	private String preguntas;
-	private String respuestas;
+	private String pregunta;
+	private List<String> respuestas;
+	private String title;
+	private PHASE_STATE state;
 	
 
-	public Phase(Date fechaIni, Date fechaFin, String preguntas, String respuestas) {
+	public Phase(Date fechaIni, Date fechaFin, String pregunta) {
 		this.fechaIni = fechaIni;
 		this.fechaFin = fechaFin;
-		this.preguntas = preguntas;
-		this.respuestas = respuestas;
+		this.pregunta = pregunta;
+//		this.respuestas = respuestas;
+		
+		respuestas = new ArrayList<String>();
+		
 	}
 
-	public Long getIdParticipante() {
-		return id_participante;
+	public Long getId() {
+		return id;
 	}
 
-	public String getFechaIni() {
+	public String getDateIni() {
 		return new SimpleDateFormat("dd-MM-yyyy HH:mm").format(fechaIni);
 	}
 	
-	public Date getDateIni(){
+	public Date getFechaIni(){
 		return fechaIni;
 	}
 
@@ -49,11 +56,11 @@ public class Phase implements Serializable {
 		this.fechaIni = fechaIni;
 	}
 	
-	public String getFechaFin() {
+	public String getDateFin() {
 		return new SimpleDateFormat("dd-MM-yyyy HH:mm").format(fechaFin);
 	}
 	
-	public Date getDateFin(){
+	public Date getFechaFin(){
 		return fechaFin;
 	}
 
@@ -61,20 +68,54 @@ public class Phase implements Serializable {
 		this.fechaFin = fechaFin;
 	}
 
-	public String getPreguntas() {
-		return preguntas;
+	public String getPregunta() {
+		return pregunta;
 	}
 	
-	public void setPreguntas(String preguntas) {
-		this.preguntas = preguntas;
+	public void setPregunta(String pregunta) {
+		this.pregunta = pregunta;
 	}
 
-	public String getRespuestas() {
+	public List<String> getRespuestas() {
 		return respuestas;
 	}
 
-	public void setRespuestas(String respuestas) {
-		this.respuestas = respuestas;
+	public void addRespuesta(String respuesta) {
+		respuestas.add(respuesta);
 	}
+
+	public PHASE_STATE getState() {
+		return state;
+	}
+
+	public void setState(PHASE_STATE state) {
+		this.state = state;
+	}
+	
+	public String getTitle() {
+		return title;
+	}
+
+	public void setTitle(String title) {
+		this.title = title;
+	}
+
+	public Long getIdEvento() {
+		return idEvento;
+	}
+
+	public void setIdEvento(Long idEvento) {
+		this.idEvento = idEvento;
+	}
+
+	@Override
+	public String toString() {
+		return "Phase [fechaIni=" + fechaIni + ", fechaFin=" + fechaFin
+				+ ", state=" + state + "]";
+	}
+
+	
+	
+	
 	
 } 

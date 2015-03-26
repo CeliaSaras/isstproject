@@ -61,4 +61,10 @@ public class Event implements Serializable {
 		this.numPhase = numPhase;
 	}
 
+	@Override
+	public String toString() {
+		return "Event [title=" + title + ", description=" + description + "]";
+	}
+
+	
 } 

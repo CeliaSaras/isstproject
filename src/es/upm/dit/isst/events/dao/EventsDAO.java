@@ -1,8 +1,7 @@
 package es.upm.dit.isst.events.dao;
 
 import java.util.List;
-
-import es.upm.dit.isst.events.model.Event;
+import es.upm.dit.isst.events.model.*;
 
 
 public interface EventsDAO {
@@ -12,5 +11,11 @@ public interface EventsDAO {
 	public List<Event> getEvents(String userId);
 	public void remove (long id);
 	public List<String> getUsers();
-	
+	public void add(Event event);
+	public Phase getCurrentPhase(long id);
+	public List<User> getParticipants(long id);
+	public User getIniciador(long id);
+	public void update(Event event);
+	public int getNumFases(long id);
+	public List<Phase> getPhases(long id);
 }

@@ -1,12 +1,13 @@
 package es.upm.dit.isst.colabEmail;
 
-import java.awt.Event;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import javax.mail.Message;
 import javax.mail.Session;
@@ -15,77 +16,47 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.servlet.http.*;
 
-import es.upm.dit.isst.ColabEmail.dao.TodoDAO;
-import es.upm.dit.isst.ColabEmail.dao.TodoDAOImpl;
-import es.upm.dit.isst.todo.model.Todo;
 import static es.upm.dit.isst.colabEmail.util.ServiceLogger.LOGGER;
-import static es.upm.dit.isst.todo.util.ServiceLogger.LOGGER;
-
-enum PHASE_STATE {
-	NO_STATE(0),
-	NOT_STARTED(1),
-	IN_PROGRESS(2),
-	FINISHED(3);
-	
-	private int value;
-	private static int numberOfElements  = values().length;
-	
-	
-	PHASE_STATE(int value){
-		this.value = value;
-				
-	}
-	public PHASE_STATE next()
-	{
-		int nextValue = this.value+1;
-		nextValue %= numberOfElements;
-		for (PHASE_STATE state : values())
-		{
-			if(state.value == nextValue)
-				return state;
-		}
-	}
-}
+import es.upm.dit.isst.events.model.*;
+import es.upm.dit.isst.events.dao.*;
 
 
 @SuppressWarnings("serial")
 public class TXEmailServlet extends HttpServlet {
 	
-	
-	
-	private Date currentDate;
 	private static final long serialVersionUID = 1L;
-	private ColabEmailDAO dao;
+	private Date currentDate;
+	private EventsDAO eventDao;
+	private PhasesDAO phaseDao;
 	
 	public void doGet(HttpServletRequest req, HttpServletResponse resp)
 			throws IOException {
 		
 		LOGGER.info("Executing Servlet: " + getClass().getName());
 		
-		currentDate = new Date();	//The current date to compare if the phase is finished
-		
-		dao = ColabEmailDAOImpl.getInstance();
-		
-		List<Event> events = dao.getEvents();
+		currentDate = new Date();	//The current date to check if the phase is finished
+		eventDao = EventsDAOImpl.getInstance();
+//		phaseDao = PhasesDAOImpl.getInstance();		//TODO: Get static instance
+		List<Event> events = eventDao.listEvents();
 		
 		events = filterEvents(events);		
 		
 		for (Event event : events) 
 		{
-			Phase currentPhase = dao.getCurrentPhase(event.getId());
+			Phase currentPhase = eventDao.getCurrentPhase(event.getId());
 			
 			LOGGER.info("We are in the event: " + event.getTitle() + "with phase: "
-					+ currentPhase.getName);
-			PHASE_STATE state = currentPhase.getState();
-			PHASE_STATE nextState = state.next();
+					+ currentPhase.getTitle());
+
+			PHASE_STATE nextState = currentPhase.getState().next();
 			
 			LOGGER.info("Update the state");
 			
 			currentPhase.setState(nextState);
 			
-			List<String> participants = dao.getParticipants(event.getId());
+			List<User> participants = eventDao.getParticipants(event.getId());
 			
-			for (String participant: participants){
+			for (User participant: participants){
 				
 				try {
 					Properties props = new Properties();
@@ -93,32 +64,36 @@ public class TXEmailServlet extends HttpServlet {
 					Message msg = new MimeMessage(session);
 					msg.setFrom(new InternetAddress("noreply@famez-isst-2015.appspotmail.com", event.getTitle()));
 					msg.addRecipient(Message.RecipientType.TO,
-							new InternetAddress(participant + "@gmail.com", participant));
+							new InternetAddress(participant.getEmail() + "@gmail.com", participant.getEmail()));
 					
-					String msgBody;
+					String msgBody="";
 					
 					switch(nextState)
 					{
 					case IN_PROGRESS:
 						msg.setSubject("A new phase has started: " + currentPhase.getTitle());
-						msgBody = "Votación: " + currentPhase.getQuestion();
+						msgBody = "Votación: " + currentPhase.getPregunta() + "\n";
 						msgBody += "<form method=\"post\" action=\"http://1-dot-famez-isst-2015.appspot.com/newMail\"><p>Elija respuesta:<br />"; 
 						
+						for (String respuesta : currentPhase.getRespuestas()) {
+							msgBody += respuesta + ": " + "Poner porcentaje respuestas";	//TODO: Poner porcentaje respuestas
+						}
+						
+						
+						break;
+					case FINISHED:
+						msg.setSubject("A phase finished: " + currentPhase.getTitle());
+						msgBody = "Question: " + currentPhase.getPregunta() + "\n";
+						msgBody = "Answers: \n";
 						for (String respuesta : currentPhase.getRespuestas()) {
 							msgBody += "<input type=\"radio\" name=\"answer\" value=\"" + respuesta + "\"> " 
 									+ respuesta + "<br />";
 						}
 						
-						msgBody += "<input type=\"hidden\" name=\"id\" value=\"ElHashDeAlfredoParaIdUsuarioY Evento\">"; //TODO: Hacer hash md5 de id evento, id fase, id participante
-						msgBody += "<input type=\"submit\"></p></form>";
-						
-						break;
-					case FINISHED:
 						//TODO: Informar del resultado final de la votacion de esa fase
 						break;
-						
 					default:
-						break;
+						LOGGER.severe("This case should never happen!!!");
 					}
 					
 					msg.setContent(msgBody, "text/html");
@@ -129,20 +104,17 @@ public class TXEmailServlet extends HttpServlet {
 					LOGGER.warning("Exception caught: " + e.toString());
 				}
 				
-				
-				
-				
 			}
 			
 			if(currentPhase.getState() == PHASE_STATE.FINISHED){
-				if(event.getNFase()< event.getNFases())
+				if(event.getNumPhase()< eventDao.getNumFases(event.getId()))
 				{
-					event.setNFase(event.getNFase() + 1);
-					dao.update(event);
+					event.setNumPhase(event.getNumPhase() + 1);
+					eventDao.update(event);
 				}
 			}
 			
-			dao.update(currentPhase);
+			phaseDao.update(currentPhase);
 			
 		}
 		LOGGER.info("Return " + HttpServletResponse.SC_OK);
@@ -153,12 +125,12 @@ public class TXEmailServlet extends HttpServlet {
 		List<Event> filteredEvents = new ArrayList<Event>();
 		for (Event event : events) {
 		
-			Phase currentPhase = dao.getCurrentPhase(event.getId());
+			Phase currentPhase = eventDao.getCurrentPhase(event.getId());
 			
-			PHASE_STATE oldState = phase.getState();
+			PHASE_STATE oldState = currentPhase.getState();
 			
-			Date phaseStartDate = phase.getStartDate();
-			Date phaseEndDate = phase.getEndDate();
+			Date phaseStartDate = currentPhase.getFechaIni();
+			Date phaseEndDate = currentPhase.getFechaFin();
 			
 			PHASE_STATE newState = PHASE_STATE.NO_STATE;
 			
@@ -172,12 +144,38 @@ public class TXEmailServlet extends HttpServlet {
 			if(oldState == newState)	//If the phase state has not changed, then we continue
 				continue;
 			
-			assert(newState == oldState.next());		//Assertion
+//			assert(newState == oldState.next());		//Assertion
+			
+			if(newState != oldState.next())
+			{
+				LOGGER.severe("State changed unespectly\n" + currentPhase + "\n" + event);
+				continue;
+			}
 			
 			filteredEvents.add(event);
 			
 		}
 		return filteredEvents;
+	}
+	
+	private String hashUserEventPhase(long userId, long eventId, long phaseId)
+	{
+		String concat = "&" + userId + "@" + eventId + "_" + phaseId + "/";
+		
+		
+		try {
+			byte[] stringBytes = concat.getBytes("UTF-8");
+			MessageDigest md = MessageDigest.getInstance("MD5");
+			byte[] hash = md.digest(stringBytes);
+			return new String(hash, "UTF-8");
+		} catch (NoSuchAlgorithmException e) {
+			LOGGER.severe("Hash not found: " + e);
+		}catch (UnsupportedEncodingException e) {
+			LOGGER.severe("Encoding exception: " + e);
+		}
+		
+		return null;
+		
 	}
 	
 }
