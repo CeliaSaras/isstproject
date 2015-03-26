@@ -7,9 +7,10 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
+//import java.util.List;
+import java.util.HashMap;
+import java.util.Set;
 import java.text.SimpleDateFormat;
 
 
@@ -25,9 +26,11 @@ public class Phase implements Serializable {
 	private Date fechaIni;
 	private Date fechaFin;
 	private String pregunta;
-	private List<String> respuestas;
+//	private List<String> respuestas;
 	private String title;
 	private PHASE_STATE state;
+	private HashMap<String, Integer> respuestasMap;
+	private boolean tenemosRespuesta;
 	
 
 	public Phase(Date fechaIni, Date fechaFin, String pregunta) {
@@ -36,7 +39,8 @@ public class Phase implements Serializable {
 		this.pregunta = pregunta;
 //		this.respuestas = respuestas;
 		
-		respuestas = new ArrayList<String>();
+//		respuestas = new ArrayList<String>();
+		tenemosRespuesta = false;
 		
 	}
 
@@ -76,12 +80,20 @@ public class Phase implements Serializable {
 		this.pregunta = pregunta;
 	}
 
-	public List<String> getRespuestas() {
-		return respuestas;
+	public Set<String> getRespuestas() {	//Esto es como una lista, osea en el codigo para recorrerla, haces for(String respuesta: getRespuestas())
+		return respuestasMap.keySet();
 	}
 
-	public void addRespuesta(String respuesta) {
-		respuestas.add(respuesta);
+	public void addRespuesta(String respuesta) {	//Añadir una nueva posible respuesta p.e McDonalds
+		respuestasMap.put(respuesta, 0);
+	}
+	public boolean incrementarContadorRespuesta(String respuesta)	//Si alguien vota MCDonalds, haces incrementarContadorRespuesta("MCDonalds")
+	{
+		Integer contador = respuestasMap.get(respuesta);
+		if(contador == null)
+			return false;
+		respuestasMap.put(respuesta, contador + 1);
+		return true;
 	}
 
 	public PHASE_STATE getState() {
@@ -107,6 +119,16 @@ public class Phase implements Serializable {
 	public void setIdEvento(Long idEvento) {
 		this.idEvento = idEvento;
 	}
+	
+	
+
+	public boolean getTenemosRespuesta() {
+		return tenemosRespuesta;
+	}
+
+	public void setTenemosRespuesta(boolean tenemosRespuesta) {
+		this.tenemosRespuesta = tenemosRespuesta;
+	}
 
 	@Override
 	public String toString() {
@@ -114,8 +136,6 @@ public class Phase implements Serializable {
 				+ ", state=" + state + "]";
 	}
 
-	
-	
-	
-	
+	//Hash de respuestas de cada fase
+		
 } 

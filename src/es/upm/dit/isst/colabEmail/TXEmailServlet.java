@@ -78,8 +78,9 @@ public class TXEmailServlet extends HttpServlet {
 						for (String respuesta : currentPhase.getRespuestas()) {
 							msgBody += respuesta + ": " + "Poner porcentaje respuestas";	//TODO: Poner porcentaje respuestas
 						}
-						
-						
+						msgBody += "<input type=\"hidden\" name=\"id\" value=\"" 
+						+ hashUserEventPhase(participant.getId(), event.getId(), currentPhase.getId()) + "\">";
+						msgBody += "<input type=\"submit\"></p></form>";
 						break;
 					case FINISHED:
 						msg.setSubject("A phase finished: " + currentPhase.getTitle());
