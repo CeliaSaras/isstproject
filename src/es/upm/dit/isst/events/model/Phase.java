@@ -95,6 +95,36 @@ public class Phase implements Serializable {
 		respuestasMap.put(respuesta, contador + 1);
 		return true;
 	}
+	public int getContadorRespuesta(String respuesta)
+	{
+		Integer contador = respuestasMap.get(respuesta);
+		if(contador == null)
+			return 0;
+		return respuestasMap.get(respuesta);
+	}
+	
+	public int getTotalRespuestas(){
+		int total = 0;
+		for (int aux: respuestasMap.values())
+			total+=aux;
+		return total;
+	}
+	
+	public int getPorcentajeRespuesta(String respuesta)
+	{
+		return (int)(100*((double)getContadorRespuesta(respuesta)) / (double)getTotalRespuestas());
+	}
+	
+	public String getMostVotedResponse()
+	{	
+		String aux ="";
+		for (String key: respuestasMap.keySet())
+		{
+			if(getContadorRespuesta(aux) < getContadorRespuesta(key))
+				aux=key;
+		}
+		return aux;
+	}
 
 	public PHASE_STATE getState() {
 		return state;

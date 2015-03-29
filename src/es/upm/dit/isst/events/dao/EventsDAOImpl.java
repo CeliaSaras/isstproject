@@ -39,7 +39,7 @@ public class EventsDAOImpl implements EventsDAO {
 	public void add(String title, String description, Integer numPhase) {
 		synchronized (this) {
 			EntityManager em = EMFService.get().createEntityManager();
-			Event event = new Event(title, description, numPhase);
+			Event event = new Event(title, description);
 			em.persist(event);
 			em.close();
 		}

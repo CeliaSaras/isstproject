@@ -21,13 +21,13 @@ import es.upm.dit.isst.events.model.*;
 import es.upm.dit.isst.events.dao.*;
 
 
-@SuppressWarnings("serial")
 public class TXEmailServlet extends HttpServlet {
 	
 	private static final long serialVersionUID = 1L;
 	private Date currentDate;
 	private EventsDAO eventDao;
 	private PhasesDAO phaseDao;
+	private UserEventDAO userEventDAO;
 	
 	public void doGet(HttpServletRequest req, HttpServletResponse resp)
 			throws IOException {
@@ -37,6 +37,7 @@ public class TXEmailServlet extends HttpServlet {
 		currentDate = new Date();	//The current date to check if the phase is finished
 		eventDao = EventsDAOImpl.getInstance();
 //		phaseDao = PhasesDAOImpl.getInstance();		//TODO: Get static instance
+//		userEventDAO = UserEventDAO.getInstance();	//TODO: Get static instance
 		List<Event> events = eventDao.listEvents();
 		
 		events = filterEvents(events);		
@@ -71,27 +72,35 @@ public class TXEmailServlet extends HttpServlet {
 					switch(nextState)
 					{
 					case IN_PROGRESS:
+						
+						String myHash = hashUserEventPhase(participant.getId(), event.getId(), currentPhase.getId());
+						
+						LOGGER.info("Creating hash: " + myHash);
+						
+						userEventDAO.addHash(participant.getId(), event.getId());
+						
 						msg.setSubject("A new phase has started: " + currentPhase.getTitle());
 						msgBody = "Votación: " + currentPhase.getPregunta() + "\n";
 						msgBody += "<form method=\"post\" action=\"http://1-dot-famez-isst-2015.appspot.com/newMail\"><p>Elija respuesta:<br />"; 
-						
 						for (String respuesta : currentPhase.getRespuestas()) {
-							msgBody += respuesta + ": " + "Poner porcentaje respuestas";	//TODO: Poner porcentaje respuestas
+							msgBody += "<input type=\"radio\" name=\"answer\" value=\"" + respuesta + "\"> " 
+									+ respuesta + "<br />";
 						}
+						
 						msgBody += "<input type=\"hidden\" name=\"id\" value=\"" 
-						+ hashUserEventPhase(participant.getId(), event.getId(), currentPhase.getId()) + "\">";
+						+ myHash + "\">";
 						msgBody += "<input type=\"submit\"></p></form>";
+						msgBody += "\nYou have until " + currentPhase.getDateFin() + " to vote";
 						break;
 					case FINISHED:
 						msg.setSubject("A phase finished: " + currentPhase.getTitle());
 						msgBody = "Question: " + currentPhase.getPregunta() + "\n";
 						msgBody = "Answers: \n";
 						for (String respuesta : currentPhase.getRespuestas()) {
-							msgBody += "<input type=\"radio\" name=\"answer\" value=\"" + respuesta + "\"> " 
-									+ respuesta + "<br />";
+							msgBody += respuesta + ": " + currentPhase.getPorcentajeRespuesta(respuesta) + "\n";	
 						}
+						msgBody+="The most voted response is " + currentPhase.getMostVotedResponse();
 						
-						//TODO: Informar del resultado final de la votacion de esa fase
 						break;
 					default:
 						LOGGER.severe("This case should never happen!!!");
@@ -121,6 +130,44 @@ public class TXEmailServlet extends HttpServlet {
 		LOGGER.info("Return " + HttpServletResponse.SC_OK);
 		resp.setStatus(HttpServletResponse.SC_OK);		
 	}
+//	
+//	private List<Phase> filterPhases(List<Phase> phases) {
+//		List<Phase> filteredPhases = new ArrayList<Phase>();
+//		for (Phase phase : phases) {
+//		
+//			
+//			PHASE_STATE oldState = phase.getState();
+//			
+//			Date phaseStartDate = phase.getFechaIni();
+//			Date phaseEndDate = phase.getFechaFin();
+//			
+//			PHASE_STATE newState = PHASE_STATE.NO_STATE;
+//			
+//			if(currentDate.before(phaseStartDate))
+//				newState = PHASE_STATE.NOT_STARTED;
+//			else if(currentDate.after(phaseStartDate) && currentDate.before(phaseEndDate))
+//				newState = PHASE_STATE.IN_PROGRESS;
+//			else if(currentDate.after(phaseEndDate))
+//				newState = PHASE_STATE.FINISHED;
+//			
+//			if(oldState == newState)	//If the phase state has not changed, then we continue
+//				continue;
+//			
+////			assert(newState == oldState.next());		//Assertion
+//			
+//			if(newState != oldState.next())
+//			{
+//				LOGGER.severe("State changed unespectly\n" + phase);
+//				continue;
+//			}
+//			
+//			//Update the state of the phase
+//			
+//			filteredPhases.add(phase);
+//			
+//		}
+//		return filteredPhases;
+//	}
 	
 	private List<Event> filterEvents(List<Event> events) {
 		List<Event> filteredEvents = new ArrayList<Event>();
@@ -152,6 +199,8 @@ public class TXEmailServlet extends HttpServlet {
 				LOGGER.severe("State changed unespectly\n" + currentPhase + "\n" + event);
 				continue;
 			}
+			
+			//Update the state of the phase
 			
 			filteredEvents.add(event);
 			
