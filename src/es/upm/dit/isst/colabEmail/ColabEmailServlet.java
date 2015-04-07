@@ -1,4 +1,4 @@
-package es.upm.dit.isst.colabemail;
+package es.upm.dit.isst.colabEmail;
 
 import java.io.IOException;
 import javax.servlet.http.*;

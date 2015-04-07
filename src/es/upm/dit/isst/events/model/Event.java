@@ -22,11 +22,9 @@ public class Event implements Serializable {
 	private String title;
 	private String description;
 	
-
-	public Event(String title, String description, Integer numPhase) {
+	public Event(String title, String description) {
 		this.title = title;
 		this.description = description;
-		this.numPhase = numPhase;
 	}
 
 	public Long getId() {
